@@ -166,12 +166,14 @@ void StringAppendVT(const CharType *format, va_list ap, std::basic_string<CharTy
     std::basic_string<CharType> heap_buffer;
     for (;;)
     {
-        if (result != -1)
-        {
-            ASSERT(0);
-            return; /* not expected, result should be -1 here */
+        if (result >= buffer_size) {
+            // 部分实现返回所需缓冲区大小（不含\0）
+            buffer_size = result + 1;
         }
-        buffer_size <<= 1; /* try doubling the buffer size */
+        else {
+            // 其他实现返回-1（例如发生截断），按倍增策略扩容
+            buffer_size <<= 1; /* try doubling the buffer size */
+        }
         if (buffer_size > 32 * 1024 * 1024)
         {
             ASSERT(0);
