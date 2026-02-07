@@ -604,6 +604,61 @@ TEST_F(EventBusTest, UnsubscribeDuringDispatch)
 // Clear 测试
 /////////////////////////////////////////////////////////////////////////////////////
 
+TEST_F(EventBusTest, DuplicateUnsubscribeDuringDispatch)
+{
+    int count1 = 0, count2 = 0;
+    SubscriptionID id2 = SubscriptionID::kInvalid;
+
+    EventBus::Instance().Subscribe(kEventClick,
+        [&](EventType, WPARAM, LPARAM) {
+            count1++;
+            EventBus::Instance().Unsubscribe(id2);
+            EventBus::Instance().Unsubscribe(id2);
+            EventBus::Instance().Unsubscribe(id2);
+        });
+
+    id2 = EventBus::Instance().Subscribe(kEventClick,
+        [&](EventType, WPARAM, LPARAM) {
+            count2++;
+        });
+
+    EventBus::Instance().Publish(kEventClick);
+    EXPECT_EQ(count1, 1);
+    EXPECT_EQ(count2, 1);
+    EXPECT_EQ(EventBus::Instance().GetSubscriptionCount(), 1u);
+
+    EventBus::Instance().Publish(kEventClick);
+    EXPECT_EQ(count1, 2);
+    EXPECT_EQ(count2, 1);
+}
+
+TEST_F(EventBusTest, NestedPublishNoSubscriberDoesNotApplyPendingUnsubscribeEarly)
+{
+    int count1 = 0, count2 = 0;
+    SubscriptionID id2 = SubscriptionID::kInvalid;
+
+    EventBus::Instance().Subscribe(kEventClick,
+        [&](EventType, WPARAM, LPARAM) {
+            count1++;
+            EventBus::Instance().Unsubscribe(id2);
+            EventBus::Instance().Publish(kEventSelect);
+        });
+
+    id2 = EventBus::Instance().Subscribe(kEventClick,
+        [&](EventType, WPARAM, LPARAM) {
+            count2++;
+        });
+
+    EventBus::Instance().Publish(kEventClick);
+    EXPECT_EQ(count1, 1);
+    EXPECT_EQ(count2, 1);
+    EXPECT_EQ(EventBus::Instance().GetSubscriptionCount(), 1u);
+
+    EventBus::Instance().Publish(kEventClick);
+    EXPECT_EQ(count1, 2);
+    EXPECT_EQ(count2, 1);
+}
+
 TEST_F(EventBusTest, ClearAll)
 {
     EventBus::Instance().Subscribe(kEventClick,

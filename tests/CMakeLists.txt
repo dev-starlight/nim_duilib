@@ -107,6 +107,28 @@ target_include_directories(stringutil_tests PRIVATE
 )
 register_gtest_target(stringutil_tests)
 
+if(WIN32)
+    add_executable(logutil_tests
+        Utils/test_LogUtil.cpp
+        "${DUILIB_SRC_ROOT_DIR}/duilib/Utils/LogUtil.cpp"
+        "${DUILIB_SRC_ROOT_DIR}/duilib/Utils/StringUtil.cpp"
+        "${DUILIB_SRC_ROOT_DIR}/duilib/Utils/StringConvert.cpp"
+        "${DUILIB_SRC_ROOT_DIR}/duilib/third_party/convert_utf/ConvertUTF.cpp"
+    )
+    target_include_directories(logutil_tests PRIVATE
+        "${DUILIB_SRC_ROOT_DIR}"
+    )
+    find_package(glog CONFIG QUIET)
+    if(NOT TARGET glog::glog)
+        find_package(glog QUIET)
+    endif()
+    if(TARGET glog::glog)
+        target_compile_definitions(logutil_tests PRIVATE DUILIB_WITH_GLOG=1)
+        target_link_libraries(logutil_tests PRIVATE glog::glog)
+    endif()
+    register_gtest_target(logutil_tests)
+endif()
+
 add_executable(filesystem_tests
     Core/test_ResourceParam.cpp
     Utils/test_FilePath.cpp
