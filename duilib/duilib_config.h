@@ -31,6 +31,12 @@
 #if (DUILIB_LIB_PAG)
     #define DUILIB_IMAGE_SUPPORT_LIB_PAG 1
 #endif
+
+/** 是否启用 Lua 脚本引擎支持
+*/
+#if (DUILIB_LUA)
+    #define DUILIB_BUILD_FOR_LUA 1
+#endif
     
 #elif defined(linux) || defined(__linux) || defined(__linux__)
     #define DUILIB_BUILD_FOR_LINUX  1

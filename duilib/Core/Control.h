@@ -1159,6 +1159,14 @@ public:
     void DetachEventByID(EventCallbackID callbackID);
     void DetachEventByID(EventType eventType, EventCallbackID callbackID);
 
+#ifdef DUILIB_BUILD_FOR_LUA
+    /** 绑定Lua事件处理函数
+     * @param [in] eventName 事件名称(如: "click", "mouseenter")
+     * @param [in] luaFuncName Lua函数名称
+     */
+    void AttachLuaEvent(const DString& eventName, const DString& luaFuncName);
+#endif
+
     /** (m_pOnEvent)是否含有指定事件
      * @param [in] eventType 事件类型，见 EventType 枚举
      * @param [in] callbackID 该回调函数对应的ID

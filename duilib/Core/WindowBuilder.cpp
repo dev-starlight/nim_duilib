@@ -58,6 +58,10 @@
 #include "duilib/Utils/AttributeUtil.h"
 #include "duilib/Utils/FilePathUtil.h"
 
+#ifdef DUILIB_BUILD_FOR_LUA
+#include "../Lua/LuaEngine.h"
+#endif
+
 #include "duilib/third_party/xml/pugixml.hpp"
 #include <set>
 
@@ -1074,6 +1078,22 @@ Control* WindowBuilder::ParseXmlNodeChildren(const pugi::xml_node& xmlNode, Cont
         }
 
         Control* pControl = nullptr;
+#ifdef DUILIB_BUILD_FOR_LUA
+        if (strClass == _T("LuaScript")) {
+            pugi::xml_attribute srcAttr = node.attribute(_T("src"));
+            DString srcValue = srcAttr.as_string();
+            if (!srcValue.empty()) {
+                ui::LuaEngine::Instance().LoadScript(srcValue);
+            }
+            else {
+                DString inlineCode = node.text().as_string();
+                if (!inlineCode.empty()) {
+                    ui::LuaEngine::Instance().DoString(inlineCode);
+                }
+            }
+            continue;
+        }
+#endif
         if (strClass == _T("Include")) {
             if (node.attributes().empty()) {
                 continue;

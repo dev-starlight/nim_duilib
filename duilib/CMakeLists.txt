@@ -18,6 +18,16 @@ endif()
 
 project(duilib CXX C)
 
+# ============================================================
+# Lua scripting support (optional, default OFF)
+# ============================================================
+option(DUILIB_ENABLE_LUA "Enable Lua scripting support via sol3" OFF)
+
+# ============================================================
+# Runtime logging backend (glog, default ON)
+# ============================================================
+option(DUILIB_ENABLE_GLOG "Enable glog backend for runtime logging" ON)
+
 if(MSVC)
     # 源文件为UTF8编码
     add_compile_options("/utf-8")
@@ -70,6 +80,17 @@ if(CEF_LIB_DIR AND NOT CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
     include_directories(${CEF_INCLUDE_ROOT_DIR})
 else()
     message(STATUS "CEF includes disabled - not supported on this platform")
+endif()
+
+# Conditionally include Lua directories
+if(DUILIB_ENABLE_LUA)
+    # Lua 5.4 source headers
+    set(LUA_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/third_party/lua/src")
+    include_directories(${LUA_INCLUDE_DIR})
+    
+    # sol3 header-only library
+    set(SOL_INCLUDE_DIR "${CMAKE_CURRENT_LIST_DIR}/third_party/sol/include")
+    include_directories(${SOL_INCLUDE_DIR})
 endif()
 
 #设置库文件的输出目录
@@ -232,14 +253,58 @@ else()
     message(STATUS "CEF support disabled (FreeBSD is not supported)")
 endif()
 
+# ============================================================
+# Lua scripting support (optional, default OFF)
+# ============================================================
+if(DUILIB_ENABLE_LUA)
+    # Lua 5.4 source code
+    file(GLOB LUA_SRCS "${CMAKE_CURRENT_LIST_DIR}/third_party/lua/src/*.c")
+    # Exclude lua.c and luac.c (standalone interpreter and compiler)
+    list(FILTER LUA_SRCS EXCLUDE REGEX "lua\.c$")
+    list(FILTER LUA_SRCS EXCLUDE REGEX "luac\.c$")
+    
+    # Lua binding layer source
+    aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/Lua LUA_BINDING_SRC)
+    
+    # Add to library sources
+    list(APPEND LIBRARY_SOURCES ${LUA_SRCS} ${LUA_BINDING_SRC})
+    
+    message(STATUS "Lua scripting support enabled (sol3 + Lua 5.4)")
+else()
+    message(STATUS "Lua scripting support disabled")
+endif()
+
+# Create the library target
 if(CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
     find_package(Freetype REQUIRED)
     find_package(Fontconfig REQUIRED)
     add_library(${PROJECT_NAME} ${LIBRARY_SOURCES})
-    target_link_libraries(${PROJECT_NAME} Freetype::Freetype Fontconfig::Fontconfig)
+    target_link_libraries(${PROJECT_NAME} PRIVATE Freetype::Freetype Fontconfig::Fontconfig)
 else()
-    # Create the library with the filtered sources
     add_library(${PROJECT_NAME} ${LIBRARY_SOURCES})
+endif()
+
+# glog integration (default ON)
+if(DUILIB_ENABLE_GLOG)
+    find_package(glog CONFIG QUIET)
+    if(NOT TARGET glog::glog)
+        find_package(glog QUIET)
+    endif()
+
+    if(TARGET glog::glog)
+        target_link_libraries(${PROJECT_NAME} PRIVATE glog::glog)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE DUILIB_WITH_GLOG=1)
+        message(STATUS "glog backend enabled for duilib runtime logging")
+    else()
+        message(WARNING "DUILIB_ENABLE_GLOG is ON, but glog was not found; falling back to platform logger backend")
+    endif()
+else()
+    message(STATUS "glog backend disabled")
+endif()
+
+# Add Lua compile definitions
+if(DUILIB_ENABLE_LUA)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE DUILIB_LUA=1)
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -307,4 +372,17 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
     
     target_compile_options(${PROJECT_NAME} PRIVATE ${DUILIB_COMPILER_FLAGS})
     target_compile_options(${PROJECT_NAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>: ${DUILIB_CXX_COMPILER_FLAGS}>)
+endif()
+
+option(DUILIB_BUILD_TESTS "Build duilib unit tests" OFF)
+if(DUILIB_BUILD_TESTS)
+    include(CTest)
+    if(BUILD_TESTING)
+        set(DUILIB_TESTS_CMAKE "${DUILIB_SRC_ROOT_DIR}/tests/CMakeLists.txt")
+        if(EXISTS "${DUILIB_TESTS_CMAKE}")
+            add_subdirectory("${DUILIB_SRC_ROOT_DIR}/tests" "${CMAKE_BINARY_DIR}/tests")
+        else()
+            message(WARNING "DUILIB_BUILD_TESTS is ON, but tests/CMakeLists.txt was not found")
+        endif()
+    endif()
 endif()

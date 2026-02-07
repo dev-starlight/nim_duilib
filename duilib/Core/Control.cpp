@@ -16,6 +16,10 @@
 #include "duilib/Utils/AttributeUtil.h"
 #include "duilib/Utils/PerformanceUtil.h"
 
+#ifdef DUILIB_BUILD_FOR_LUA
+#include "../Lua/LuaEngine.h"
+#endif
+
 #if defined (DUILIB_BUILD_FOR_WIN) && !defined (DUILIB_BUILD_FOR_SDL)
     #include "ControlDropTargetImpl_Windows.h"
 #endif
@@ -577,8 +581,14 @@ void Control::SetAttribute(const DString& strName, const DString& strValue)
         //设置单元格合并属性（占几列），仅在GridLayout布局中生效
         SetColumnSpan(StringUtil::StringToInt32(strValue));
     }
+#ifdef DUILIB_BUILD_FOR_LUA
+    else if (strName.find(_T("lua_on")) == 0) {
+        DString eventName = strName.substr(6);
+        AttachLuaEvent(eventName, strValue);
+    }
+#endif
     else {
-        ASSERT(!"Control::SetAttribute失败: 发现不能识别的属性");
+        ASSERT(!"Control::SetAttribute failed: unknown attribute");
     }
 }
 
@@ -5305,5 +5315,72 @@ ControlDropTarget_SDL* Control::GetControlDropTarget_SDL()
 #endif
     return nullptr;
 }
+
+#ifdef DUILIB_BUILD_FOR_LUA
+void Control::AttachLuaEvent(const DString& eventName, const DString& luaFuncName)
+{
+    EventType eventType = EventType::kEventNone;
+    
+    if (eventName == _T("click")) {
+        eventType = EventType::kEventClick;
+    }
+    else if (eventName == _T("mouseenter")) {
+        eventType = EventType::kEventMouseEnter;
+    }
+    else if (eventName == _T("mouseleave")) {
+        eventType = EventType::kEventMouseLeave;
+    }
+    else if (eventName == _T("mousemove")) {
+        eventType = EventType::kEventMouseMove;
+    }
+    else if (eventName == _T("mousedown")) {
+        eventType = EventType::kEventMouseButtonDown;
+    }
+    else if (eventName == _T("mouseup")) {
+        eventType = EventType::kEventMouseButtonUp;
+    }
+    else if (eventName == _T("dblclick")) {
+        eventType = EventType::kEventMouseDoubleClick;
+    }
+    else if (eventName == _T("keydown")) {
+        eventType = EventType::kEventKeyDown;
+    }
+    else if (eventName == _T("keyup")) {
+        eventType = EventType::kEventKeyUp;
+    }
+    else if (eventName == _T("char")) {
+        eventType = EventType::kEventChar;
+    }
+    else if (eventName == _T("setfocus")) {
+        eventType = EventType::kEventSetFocus;
+    }
+    else if (eventName == _T("killfocus")) {
+        eventType = EventType::kEventKillFocus;
+    }
+    else if (eventName == _T("valuechange")) {
+        eventType = EventType::kEventValueChanged;
+    }
+    else if (eventName == _T("select")) {
+        eventType = EventType::kEventSelect;
+    }
+    else if (eventName == _T("unselect")) {
+        eventType = EventType::kEventUnSelect;
+    }
+    else if (eventName == _T("textchange")) {
+        eventType = EventType::kEventTextChanged;
+    }
+
+    if (eventType != EventType::kEventNone) {
+        std::string funcName = StringConvert::TToUTF8(luaFuncName);
+        AttachEvent(eventType, [funcName](const EventArgs& args) {
+            Control* sender = args.GetSender();
+            if (sender != nullptr) {
+                ui::LuaEngine::Instance().CallFunction(funcName, sender, args);
+            }
+            return true;
+        }, 0);
+    }
+}
+#endif
 
 } // namespace ui

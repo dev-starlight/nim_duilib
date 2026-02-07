@@ -3,32 +3,39 @@
 
 #include "duilib/duilib_defs.h"
 
-namespace ui 
+namespace ui
 {
 
-/** 日志输出工具
-*/
 class UILIB_API LogUtil
 {
 public:
-    /** 输出Debug日志
-    * @param [in] log 日志内容
-    * @param [in] bPrintTime true表示打印时间戳，false表示不打印时间戳
-    */
+    // Enable runtime logger backend (glog when compiled with DUILIB_WITH_GLOG).
+    static bool InitRuntimeLogger(const DString& processName = _T("duilib"),
+                                  const DString& logDir = DString(),
+                                  bool alsoLogToStderr = true);
+
+    // Disable runtime logger backend.
+    static void ShutdownRuntimeLogger();
+
+    // Query whether runtime logger backend is enabled.
+    static bool IsRuntimeLoggerEnabled();
+
+    // Output debug log text.
     static void Output(const DString& log, bool bPrintTime = true);
 
-    /** 输出Debug日志(追加换行符)
-    * @param [in] log 日志内容
-    * @param [in] bPrintTime true表示打印时间戳，false表示不打印时间戳
-    */
+    // Output debug log text and append newline for non-glog backends.
     static void OutputLine(const DString& log, bool bPrintTime = true);
 
+    // Output log only in Debug build.
+    static void Debug(const DString& log, bool bPrintTime = true);
+
+    // Output line log only in Debug build.
+    static void DebugLine(const DString& log, bool bPrintTime = true);
+
 private:
-    /** 获取时间戳字符串
-    */
     static DString GetTimeStamp();
 };
 
-}
+} // namespace ui
 
 #endif // UI_UTILS_LOG_UTIL_H_

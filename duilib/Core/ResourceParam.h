@@ -6,20 +6,25 @@
 namespace ui 
 {
 /** 资源的类型
-*/
+ */
 enum class ResourceType
 {
     /** 本地文件的形式，所有资源都已本地文件的形式存在
-    */
+     */
     kLocalFiles,
 
     /** 资源文件打包为zip压缩包，然后以本地文件的形式存在
-    */
+     */
     kZipFile,
 
     /** 资源文件打包为zip压缩包，然后放在exe/dll的资源文件中
-    */
-    kResZipFile
+     */
+    kResZipFile,
+
+    /** 编译资源形式，资源在编译期被打包为C++代码并链接到可执行文件中
+     * 运行时无需文件I/O，直接内存访问
+     */
+    kCompiledResources
 };
 
 /** 加载全局资源所需的基本参数（基类，使用时需要使用子类，见下方定义）
@@ -75,8 +80,33 @@ public:
     DString languageFileName = _T("zh_CN.txt");
 
     /** 全局资源描述XML文件的文件名，默认为："global.xml"
-    */
+     */
     DString globalXmlFileName = _T("global.xml");
+};
+
+/** 加载全局资源所需的参数（编译资源形式，对应资源类型：kCompiledResources）
+ * 资源在编译期被打包为C++代码，运行时直接链接到可执行文件中
+ */
+class UILIB_API CompiledResParam : public ResourceParam
+{
+public:
+    CompiledResParam() : ResourceParam(ResourceType::kCompiledResources)
+    {
+    }
+
+    /** 资源数据指针（由资源编译工具生成）
+     * 指向编译后的资源数据结构
+     */
+    const void* compiledData = nullptr;
+
+    /** 资源数据大小（字节）
+     */
+    size_t compiledDataSize = 0;
+
+    /** 资源命名空间前缀
+     * 默认":/"，访问资源时使用":/path/to/file"格式
+     */
+    DString resourcePrefix = _T(":/");
 };
 
 /** 加载全局资源所需的参数（本地文件形式，对应资源类型：kLocalFiles）

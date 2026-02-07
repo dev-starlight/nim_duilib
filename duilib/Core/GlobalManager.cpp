@@ -1,6 +1,7 @@
 #include "GlobalManager.h"
 #include "duilib/Utils/StringUtil.h"
 #include "duilib/Utils/FilePathUtil.h"
+#include "duilib/Utils/LogUtil.h"
 #include "duilib/Core/Window.h"
 #include "duilib/Core/Control.h"
 #include "duilib/Core/Box.h"
@@ -27,19 +28,30 @@
 #endif
 
 #include <filesystem>
+#include <algorithm>
+#include <memory>
 
 namespace ui 
 {
+static DString GetResourceTypeName(ResourceType resourceType)
+{
+    switch (resourceType) {
+    case ResourceType::kLocalFiles:
+        return _T("LocalFiles");
+    case ResourceType::kZipFile:
+        return _T("ZipFile");
+#ifdef DUILIB_BUILD_FOR_WIN
+    case ResourceType::kResZipFile:
+        return _T("ResZipFile");
+#endif
+    default:
+        return _T("Unknown");
+    }
+}
 /** 库内部的工作线程
 */
 class UiWorkerThread : public ui::FrameworkThread
 {
-public:
-    struct Param
-    {
-        DString name;
-        int32_t nIdentifier;
-    };
 public:
     UiWorkerThread(const DString& threadName, int32_t nThreadIdentifier):
         FrameworkThread(threadName, nThreadIdentifier)
@@ -113,8 +125,12 @@ bool GlobalManager::Startup(const ResourceParam& resParam,
                             DpiInitParam dpiInitParam,
                             const CreateControlCallback& callback)
 {
+    LogUtil::DebugLine(StringUtil::Printf(_T("[GlobalManager::Startup] begin: resType=%s, resourcePath=%s"),
+                                          GetResourceTypeName(resParam.GetResType()).c_str(),
+                                          resParam.resourcePath.ToString().c_str()));
     ASSERT(m_renderFactory == nullptr);
     if (m_renderFactory != nullptr) {
+        LogUtil::DebugLine(_T("[GlobalManager::Startup] skipped: already initialized"));
         return false;
     }
     //初始化COM/OLE
@@ -169,6 +185,7 @@ bool GlobalManager::Startup(const ResourceParam& resParam,
 
     ASSERT(m_renderFactory != nullptr);
     if (m_renderFactory == nullptr) {
+        LogUtil::DebugLine(_T("[GlobalManager::Startup] failed: RenderFactory_Skia is null"));
         return false;
     }
 
@@ -184,16 +201,19 @@ bool GlobalManager::Startup(const ResourceParam& resParam,
 
     //加载资源
     if (!ReloadResource(resParam, false)) {
+        LogUtil::DebugLine(_T("[GlobalManager::Startup] failed: ReloadResource returned false"));
         m_renderFactory.reset();
         return false;
     }
+    LogUtil::DebugLine(_T("[GlobalManager::Startup] success"));
     return true;
 }
 
 void GlobalManager::Shutdown()
 {
+    LogUtil::DebugLine(_T("[GlobalManager::Shutdown] begin"));
     //终止线程池
-    for (std::shared_ptr<FrameworkThread> pThread: m_threadList) {
+    for (const std::shared_ptr<FrameworkThread>& pThread: m_threadList) {
         if (pThread != nullptr) {
             pThread->Stop();
         }
@@ -233,10 +253,12 @@ void GlobalManager::Shutdown()
     ::CoUninitialize();
     ::OleUninitialize();
 #endif
+    LogUtil::DebugLine(_T("[GlobalManager::Shutdown] end"));
 }
 
 bool GlobalManager::StopInnerThread(int32_t nThreadIdentifier)
 {
+    LogUtil::DebugLine(StringUtil::Printf(_T("[GlobalManager::StopInnerThread] begin: id=%d"), nThreadIdentifier));
     AssertUIThread();
     ASSERT((nThreadIdentifier == ui::kThreadWorker)  ||
            (nThreadIdentifier == ui::kThreadNetwork) ||
@@ -246,6 +268,7 @@ bool GlobalManager::StopInnerThread(int32_t nThreadIdentifier)
         (nThreadIdentifier != ui::kThreadNetwork) &&
         (nThreadIdentifier != ui::kThreadImage1)  &&
         (nThreadIdentifier != ui::kThreadImage2)) {
+        LogUtil::DebugLine(StringUtil::Printf(_T("[GlobalManager::StopInnerThread] invalid id: %d"), nThreadIdentifier));
         return false;
     }
     bool bRet = false;
@@ -258,20 +281,44 @@ bool GlobalManager::StopInnerThread(int32_t nThreadIdentifier)
             break;
         }
     }
+    LogUtil::DebugLine(StringUtil::Printf(_T("[GlobalManager::StopInnerThread] result: id=%d, stopped=%d"),
+                                          nThreadIdentifier,
+                                          bRet ? 1 : 0));
     return bRet;
 }
 
 bool GlobalManager::StartInnerThread(int32_t nThreadIdentifier)
 {
+    LogUtil::DebugLine(StringUtil::Printf(_T("[GlobalManager::StartInnerThread] begin: id=%d"), nThreadIdentifier));
     AssertUIThread();
-    ASSERT((nThreadIdentifier == ui::kThreadWorker)  ||
+    ASSERT((nThreadIdentifier == ui::kThreadWorker) ||
            (nThreadIdentifier == ui::kThreadNetwork) ||
-           (nThreadIdentifier == ui::kThreadImage1)  ||
+           (nThreadIdentifier == ui::kThreadImage1) ||
            (nThreadIdentifier == ui::kThreadImage2));
-    if ((nThreadIdentifier != ui::kThreadWorker)  &&
-        (nThreadIdentifier != ui::kThreadNetwork) &&
-        (nThreadIdentifier != ui::kThreadImage1)  &&
-        (nThreadIdentifier != ui::kThreadImage2)) {
+    const DString* pThreadName = nullptr;
+    switch (nThreadIdentifier) {
+    case ui::kThreadWorker: {
+        static const DString kWorkerName = _T("Worker");
+        pThreadName = &kWorkerName;
+        break;
+    }
+    case ui::kThreadNetwork: {
+        static const DString kNetworkName = _T("Network");
+        pThreadName = &kNetworkName;
+        break;
+    }
+    case ui::kThreadImage1: {
+        static const DString kImage1Name = _T("Image1");
+        pThreadName = &kImage1Name;
+        break;
+    }
+    case ui::kThreadImage2: {
+        static const DString kImage2Name = _T("Image2");
+        pThreadName = &kImage2Name;
+        break;
+    }
+    default:
+        LogUtil::DebugLine(StringUtil::Printf(_T("[GlobalManager::StartInnerThread] invalid id: %d"), nThreadIdentifier));
         return false;
     }
     bool bRet = false;
@@ -284,21 +331,14 @@ bool GlobalManager::StartInnerThread(int32_t nThreadIdentifier)
     }
     if (!bRet) {
         //初始化线程池
-        std::vector<UiWorkerThread::Param> threadParams = { {_T("Worker"), ThreadIdentifier::kThreadWorker},
-                                                            {_T("Network"), ThreadIdentifier::kThreadNetwork},
-                                                            {_T("Image1"), ThreadIdentifier::kThreadImage1},
-                                                            {_T("Image2"), ThreadIdentifier::kThreadImage2} };
-        for (const UiWorkerThread::Param& param : threadParams) {
-            if (param.nIdentifier != nThreadIdentifier) {
-                continue;
-            }
-            auto pThread = std::make_shared<UiWorkerThread>(param.name, param.nIdentifier);
-            m_threadList.push_back(pThread);
-            pThread->Start();
-            bRet = true;
-            break;
-        }
+        auto pThread = std::make_shared<UiWorkerThread>(*pThreadName, nThreadIdentifier);
+        m_threadList.push_back(pThread);
+        pThread->Start();
+        bRet = true;
     }
+    LogUtil::DebugLine(StringUtil::Printf(_T("[GlobalManager::StartInnerThread] result: id=%d, started=%d"),
+                                          nThreadIdentifier,
+                                          bRet ? 1 : 0));
     return bRet;
 }
 
@@ -347,6 +387,10 @@ const DString& GlobalManager::GetLanguageFileName() const
 
 bool GlobalManager::ReloadResource(const ResourceParam& resParam, bool bInvalidate)
 {
+    LogUtil::DebugLine(StringUtil::Printf(_T("[GlobalManager::ReloadResource] begin: resType=%s, resourcePath=%s, invalidate=%d"),
+                                          GetResourceTypeName(resParam.GetResType()).c_str(),
+                                          resParam.resourcePath.ToString().c_str(),
+                                          bInvalidate ? 1 : 0));
     AssertUIThread();
     //校验输入参数
     FilePath strResourcePath = resParam.resourcePath;
@@ -355,6 +399,7 @@ bool GlobalManager::ReloadResource(const ResourceParam& resParam, bool bInvalida
         //const LocalFilesResParam& param = static_cast<const LocalFilesResParam&>(resParam);
         ASSERT(!strResourcePath.IsEmpty());
         if (strResourcePath.IsEmpty()) {
+            LogUtil::DebugLine(_T("[GlobalManager::ReloadResource] failed: LocalFiles resource path is empty"));
             return false;
         }
     }
@@ -363,6 +408,8 @@ bool GlobalManager::ReloadResource(const ResourceParam& resParam, bool bInvalida
         const ZipFileResParam& param = static_cast<const ZipFileResParam&>(resParam);
         bool bZipOpenOk = Zip().OpenZipFile(param.zipFilePath, param.zipPassword);
         if (!bZipOpenOk) {
+            LogUtil::DebugLine(StringUtil::Printf(_T("[GlobalManager::ReloadResource] failed: OpenZipFile failed, zip=%s"),
+                                                  param.zipFilePath.ToString().c_str()));
             ASSERT(!"OpenZipFile failed!");
             return false;
         }
@@ -373,12 +420,14 @@ bool GlobalManager::ReloadResource(const ResourceParam& resParam, bool bInvalida
         const ResZipFileResParam& param = static_cast<const ResZipFileResParam&>(resParam);
         bool bZipOpenOk = Zip().OpenResZip(param.hResModule, param.resourceName, param.resourceType, param.zipPassword);
         if (!bZipOpenOk) {
+            LogUtil::DebugLine(_T("[GlobalManager::ReloadResource] failed: OpenResZip failed"));
             ASSERT(!"OpenResZip failed!");
             return false;
         }
     }
 #endif
     else {
+        LogUtil::DebugLine(_T("[GlobalManager::ReloadResource] failed: unsupported resource type"));
         ASSERT(false);
         return false;
     }
@@ -403,13 +452,21 @@ bool GlobalManager::ReloadResource(const ResourceParam& resParam, bool bInvalida
         Window paint_manager;
         if (dialog_builder.ParseXmlFile(FilePath(resParam.globalXmlFileName))) {
             dialog_builder.CreateControls(&paint_manager);
-        }        
+        }
+        else {
+            LogUtil::DebugLine(StringUtil::Printf(_T("[GlobalManager::ReloadResource] warning: failed to parse global xml: %s"),
+                                                  resParam.globalXmlFileName.c_str()));
+        }
     }
 
     //加载多语言文件(可选)
     if (!resParam.languagePath.IsEmpty() && !resParam.languageFileName.empty()) {
         FilePath languagePath = FilePathUtil::JoinFilePath(strResourcePath, resParam.languagePath);
-        ReloadLanguage(languagePath, resParam.languageFileName, false);
+        if (!ReloadLanguage(languagePath, resParam.languageFileName, false)) {
+            LogUtil::DebugLine(StringUtil::Printf(_T("[GlobalManager::ReloadResource] warning: ReloadLanguage failed, path=%s, file=%s"),
+                                                  languagePath.ToString().c_str(),
+                                                  resParam.languageFileName.c_str()));
+        }
     }
     else if (!resParam.languagePath.IsEmpty()) {
         SetLanguagePath(FilePathUtil::JoinFilePath(strResourcePath, resParam.languagePath));
@@ -427,6 +484,7 @@ bool GlobalManager::ReloadResource(const ResourceParam& resParam, bool bInvalida
             }            
         }
     }
+    LogUtil::DebugLine(_T("[GlobalManager::ReloadResource] success"));
     return true;
 }
 
@@ -434,9 +492,14 @@ bool GlobalManager::ReloadLanguage(const FilePath& languagePath,
                                    const DString& languageFileName,
                                    bool bInvalidate)
 {
+    LogUtil::DebugLine(StringUtil::Printf(_T("[GlobalManager::ReloadLanguage] begin: path=%s, file=%s, invalidate=%d"),
+                                          languagePath.ToString().c_str(),
+                                          languageFileName.c_str(),
+                                          bInvalidate ? 1 : 0));
     AssertUIThread();
     ASSERT(!languageFileName.empty());
     if (languageFileName.empty()) {
+        LogUtil::DebugLine(_T("[GlobalManager::ReloadLanguage] failed: language file name is empty"));
         return false;
     }
 
@@ -456,12 +519,18 @@ bool GlobalManager::ReloadLanguage(const FilePath& languagePath,
             bReadOk = m_langManager.LoadStringTable(fileData);
         }
         else {
+            LogUtil::DebugLine(StringUtil::Printf(_T("[GlobalManager::ReloadLanguage] failed: GetZipData failed, file=%s"),
+                                                  filePath.ToString().c_str()));
             ASSERT(!"GetZipData failed!");
         }
     }
     else {
         FilePath filePath = FilePathUtil::JoinFilePath(newLanguagePath, FilePath(languageFileName));
         bReadOk = m_langManager.LoadStringTable(filePath);
+        if (!bReadOk) {
+            LogUtil::DebugLine(StringUtil::Printf(_T("[GlobalManager::ReloadLanguage] failed: LoadStringTable failed, file=%s"),
+                                                  filePath.ToString().c_str()));
+        }
     }
 
     if (bReadOk) {
@@ -493,6 +562,8 @@ bool GlobalManager::ReloadLanguage(const FilePath& languagePath,
             }
         }
     }
+    LogUtil::DebugLine(StringUtil::Printf(_T("[GlobalManager::ReloadLanguage] result: success=%d"),
+                                          bReadOk ? 1 : 0));
     return bReadOk;
 }
 
@@ -660,10 +731,11 @@ FilePath GlobalManager::FindExistsResFullPath(const FilePath& windowResPath,
     }
     else {
         //相对路径：首先在窗口的资源目录中查找（命中率高）
-        const FilePath windowResFullPath = FilePathUtil::JoinFilePath(GlobalManager::GetResourcePath(), windowResPath);        
+        const FilePath& globalResPath = GlobalManager::GetResourcePath();
+        const FilePath windowResFullPath = FilePathUtil::JoinFilePath(globalResPath, windowResPath);
         if (IsResInPublicPath(resPath)) {
             //优先从公共目录匹配
-            imageFullPath = FilePathUtil::JoinFilePath(GlobalManager::GetResourcePath(), resPath);
+            imageFullPath = FilePathUtil::JoinFilePath(globalResPath, resPath);
             CheckImagePath(imageFullPath, bLocalPath);
         }
         if (imageFullPath.IsEmpty()) {
@@ -673,7 +745,7 @@ FilePath GlobalManager::FindExistsResFullPath(const FilePath& windowResPath,
         }
         if (imageFullPath.IsEmpty()) {
             //其次在公共目录中查找（命中率高）
-            imageFullPath = FilePathUtil::JoinFilePath(GlobalManager::GetResourcePath(), resPath);
+            imageFullPath = FilePathUtil::JoinFilePath(globalResPath, resPath);
             CheckImagePath(imageFullPath, bLocalPath);
         }
         if (imageFullPath.IsEmpty() && !windowXmlPath.IsEmpty()) {
@@ -683,7 +755,7 @@ FilePath GlobalManager::FindExistsResFullPath(const FilePath& windowResPath,
             CheckImagePath(imageFullPath, bLocalPath);
 
             if (imageFullPath.IsEmpty()) {
-                const FilePath xmlFullPath = FilePathUtil::JoinFilePath(GlobalManager::GetResourcePath(), windowXmlPath);
+                const FilePath xmlFullPath = FilePathUtil::JoinFilePath(globalResPath, windowXmlPath);
                 imageFullPath = FilePathUtil::JoinFilePath(xmlFullPath, resPath);
                 CheckImagePath(imageFullPath, bLocalPath);
             }
@@ -707,25 +779,30 @@ FilePath GlobalManager::FindExistsResFullPath(const FilePath& windowResPath,
 
 void GlobalManager::AddResNotFoundCallback(ResNotFoundCallback callback, size_t callbackId)
 {
-    if (callback != nullptr) {
-        ResNotFoundCallbackData data;
-        data.m_callback = callback;
-        data.m_callbackId = callbackId;
-        m_resNotFoundCallbacks.push_back(data);
+    if (callback == nullptr) {
+        return;
     }
+    for (ResNotFoundCallbackData& data : m_resNotFoundCallbacks) {
+        if (data.m_callbackId == callbackId) {
+            data.m_callback = std::move(callback);
+            return;
+        }
+    }
+    ResNotFoundCallbackData data;
+    data.m_callback = std::move(callback);
+    data.m_callbackId = callbackId;
+    m_resNotFoundCallbacks.push_back(std::move(data));
 }
 
 void GlobalManager::RemoveResNotFoundCallback(size_t callbackId)
 {
-    auto iter = m_resNotFoundCallbacks.begin();
-    while (iter != m_resNotFoundCallbacks.end()) {
-        if (iter->m_callbackId == callbackId) {
-            iter = m_resNotFoundCallbacks.erase(iter);
-        }
-        else {
-            ++iter;
-        }
-    }
+    m_resNotFoundCallbacks.erase(
+        std::remove_if(m_resNotFoundCallbacks.begin(),
+                       m_resNotFoundCallbacks.end(),
+                       [callbackId](const ResNotFoundCallbackData& data) {
+                           return data.m_callbackId == callbackId;
+                       }),
+        m_resNotFoundCallbacks.end());
 }
 
 void GlobalManager::RemoveAllImages()
@@ -865,7 +942,7 @@ Box* GlobalManager::CreateBoxWithCache(Window* pWindow, const FilePath& strXmlPa
     Box* pBox = nullptr;
     auto it = m_builderMap.find(strXmlPath);
     if (it == m_builderMap.end()) {
-        WindowBuilder* builder = new WindowBuilder();
+        std::unique_ptr<WindowBuilder> builder = std::make_unique<WindowBuilder>();
         if (builder->ParseXmlFile(strXmlPath, pWindow->GetResourcePath())) {
             Control* pControl = builder->CreateControls(pWindow, callback);
             ASSERT(pControl != nullptr);
@@ -879,11 +956,7 @@ Box* GlobalManager::CreateBoxWithCache(Window* pWindow, const FilePath& strXmlPa
             }            
         }        
         if (pBox != nullptr) {
-            m_builderMap[strXmlPath].reset(builder);
-        }
-        else {
-            delete builder;
-            builder = nullptr;
+            m_builderMap[strXmlPath] = std::move(builder);
         }
     }
     else {
@@ -936,7 +1009,7 @@ bool GlobalManager::FillBoxWithCache(Box* pUserDefinedBox, const FilePath& strXm
     Box* pBox = nullptr;
     auto it = m_builderMap.find(strXmlPath);
     if (it == m_builderMap.end()) {
-        WindowBuilder* winBuilder = new WindowBuilder();
+        std::unique_ptr<WindowBuilder> winBuilder = std::make_unique<WindowBuilder>();
         if (winBuilder->ParseXmlFile(strXmlPath, pWindow->GetResourcePath())) {
             Control* pControl = winBuilder->CreateControls(pWindow, callback, nullptr, pUserDefinedBox);
             ASSERT(pControl != nullptr);
@@ -949,11 +1022,7 @@ bool GlobalManager::FillBoxWithCache(Box* pUserDefinedBox, const FilePath& strXm
             }
         }        
         if (pBox != nullptr) {
-            m_builderMap[strXmlPath].reset(winBuilder);
-        }
-        else {
-            delete winBuilder;
-            winBuilder = nullptr;
+            m_builderMap[strXmlPath] = std::move(winBuilder);
         }
     }
     else {
@@ -975,7 +1044,7 @@ bool GlobalManager::FillBoxWithCache(Box* pUserDefinedBox, const FilePath& strXm
 Control* GlobalManager::CreateControl(const DString& strControlName)
 {
     Control* pControl = nullptr;
-    for (CreateControlCallback pfnCreateControlCallback : m_pfnCreateControlCallbackList) {
+    for (const CreateControlCallback& pfnCreateControlCallback : m_pfnCreateControlCallbackList) {
         if (pfnCreateControlCallback != nullptr) {
             pControl = pfnCreateControlCallback(strControlName);
             if (pControl != nullptr) {
@@ -1045,7 +1114,7 @@ Box* GlobalManager::CreateBoxForXmlPreview(Window* pWindow,
 
 bool GlobalManager::IsInUIThread() const
 {
-    return (m_dwUiThreadId == std::this_thread::get_id()) ? true : false;
+    return m_dwUiThreadId == std::this_thread::get_id();
 }
 
 void GlobalManager::AssertUIThread() const

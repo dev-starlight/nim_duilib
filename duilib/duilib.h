@@ -4,6 +4,7 @@
 #include "duilib_defs.h"
 #include "Utils/StringUtil.h"
 #include "Utils/StringConvert.h"
+#include "Utils/LogUtil.h"
 #include "Utils/StringCharset.h"
 #include "Utils/FilePath.h"
 #include "Utils/FileUtil.h"
@@ -117,5 +118,9 @@
 #include "Control/ColorPickerStatard.h"
 #include "Control/ColorPickerStatardGray.h"
 #include "Control/ColorPickerCustom.h"
+
+#ifdef DUILIB_BUILD_FOR_LUA
+#include "Lua/LuaEngine.h"
+#endif
 
 #endif //DUILIB_HEADERS_H_
