@@ -1,0 +1,190 @@
+# nim_duilib 项目 Clang-Tidy 配置文件
+# C++20 跨平台 GUI 库静态分析配置
+
+---
+Checks: >
+  # C++ Core Guidelines
+  cppcoreguidelines-*,
+  
+  # C++ Best Practices
+  modernize-*,
+  
+  # Performance optimizations
+  performance-*,
+  
+  # Code readability
+  readability-*,
+  
+  # Bug prevention
+  bugprone-*,
+  
+  # Portability
+  portability-*,
+  
+  # Clang analyzer
+  clang-analyzer-*,
+  
+  # CERT secure coding
+  cert-*,
+  
+  # LLVM conventions
+  llvm-*,
+  
+  # Google C++ style (selective)
+  google-build-namespaces,
+  google-global-names-in-headers,
+  google-readability-casting,
+  google-runtime-int,
+  
+  # Miscellaneous useful checks
+  misc-*,
+  
+  # Exclude checks that conflict with project style
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -cppcoreguidelines-pro-bounds-constant-array-index,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-type-reinterpret-cast,
+  -cppcoreguidelines-pro-type-union-access,
+  -cppcoreguidelines-pro-type-vararg,
+  -cppcoreguidelines-special-member-functions,
+  
+  # Exclude modernize checks that may break compatibility
+  -modernize-use-trailing-return-type,
+  -modernize-use-nodiscard,
+  
+  # Exclude readability checks that are too strict
+  -readability-named-parameter,
+  -readability-braces-around-statements,
+  -readability-implicit-bool-conversion,
+  -readability-magic-numbers,
+  -readability-function-cognitive-complexity,
+  -readability-identifier-length,
+  
+  # Exclude bugprone checks with high false positive rates
+  -bugprone-easily-swappable-parameters,
+  -bugprone-exception-escape,
+  -bugprone-lambda-function-name,
+  -bugprone-narrowing-conversions,
+  -bugprone-reserved-identifier,
+  -bugprone-unchecked-optional-access,
+  
+  # Exclude performance checks that conflict with GUI patterns
+  -performance-avoid-endl,
+  
+  # Exclude misc checks
+  -misc-non-private-member-variables-in-classes,
+  -misc-include-cleaner,
+
+# 定义头文件搜索路径（用于查找依赖）
+HeaderFilterRegex: 'duilib/.*'
+
+# 定义系统头文件路径（不检查第三方库）
+SystemHeaders: false
+
+# 检查选项配置
+CheckOptions:
+  # 命名规范（与项目风格一致）
+  - key:   readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key:   readability-identifier-naming.StructCase
+    value: CamelCase
+  - key:   readability-identifier-naming.EnumCase
+    value: CamelCase
+  - key:   readability-identifier-naming.FunctionCase
+    value: CamelCase
+  - key:   readability-identifier-naming.MethodCase
+    value: CamelCase
+  - key:   readability-identifier-naming.VariableCase
+    value: camelBack
+  - key:   readability-identifier-naming.MemberCase
+    value: camelBack
+  - key:   readability-identifier-naming.MemberPrefix
+    value: m_
+  - key:   readability-identifier-naming.StaticVariableCase
+    value: CamelCase
+  - key:   readability-identifier-naming.StaticVariablePrefix
+    value: s_
+  - key:   readability-identifier-naming.GlobalVariableCase
+    value: CamelCase
+  - key:   readability-identifier-naming.GlobalVariablePrefix
+    value: g_
+  - key:   readability-identifier-naming.ConstantCase
+    value: UPPER_CASE
+  - key:   readability-identifier-naming.ConstexprCase
+    value: UPPER_CASE
+  - key:   readability-identifier-naming.MacroDefinitionCase
+    value: UPPER_CASE
+  - key:   readability-identifier-naming.TypeAliasCase
+    value: CamelCase
+  - key:   readability-identifier-naming.TypedefCase
+    value: CamelCase
+  - key:   readability-identifier-naming.EnumConstantCase
+    value: CamelCase
+  - key:   readability-identifier-naming.NamespaceCase
+    value: lower_case
+  
+  # 函数复杂度限制
+  - key:   readability-function-cognitive-complexity.Threshold
+    value: '50'
+  
+  # 行长度限制（与 .clang-format 一致）
+  - key:   readability-max-line-length.LineLength
+    value: '120'
+  
+  # 魔术数字检查阈值
+  - key:   cppcoreguidelines-avoid-magic-numbers.IgnoredIntegerValues
+    value: '0;1;2;3;4;5;8;16;32;64;128;256;512;1024'
+  
+  # 参数数量限制
+  - key:   readability-function-cognitive-complexity.Threshold
+    value: '50'
+  
+  # 现代 C++ 标准
+  - key:   modernize-loop-convert.MaxCopySize
+    value: '16'
+  - key:   modernize-loop-convert.MinConfidence
+    value: reasonable
+  - key:   modernize-loop-convert.NamingStyle
+    value: CamelCase
+  - key:   modernize-pass-by-value.IncludeStyle
+    value: llvm
+  - key:   modernize-replace-auto-ptr.IncludeStyle
+    value: llvm
+  - key:   modernize-use-nullptr.NullMacros
+    value: 'NULL'
+  
+  # 特殊成员函数
+  - key:   cppcoreguidelines-special-member-functions.AllowSoleDefaultDtor
+    value: '0'
+  - key:   cppcoreguidelines-special-member-functions.AllowMissingMoveFunctions
+    value: '0'
+  
+  # include 顺序
+  - key:   llvm-include-order.IncludeStyle
+    value: llvm
+  
+  # 性能检查阈值
+  - key:   performance-for-range-copy.WarnOnAllAutoCopies
+    value: '1'
+  - key:   performance-inefficient-string-concatenation.StrictMode
+    value: '0'
+  
+  # bugprone 检查
+  - key:   bugprone-argument-comment.StrictMode
+    value: '0'
+  - key:   bugprone-exception-escape.FunctionsThatShouldNotThrow
+    value: ''
+  - key:   bugprone-exception-escape.IgnoredExceptions
+    value: ''
+
+# 格式化匹配 .clang-format
+FormatStyle: file
+
+# 额外参数
+ExtraArgs:
+  - -std=c++20
+  - -DUUILIB_BUILD_FOR_WIN
+  - -DSK_GANESH
+  - -DSK_GL
+  - -DSK_RELEASE

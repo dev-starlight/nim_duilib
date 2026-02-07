@@ -1,0 +1,156 @@
+# nim_duilib 项目代码风格配置
+# 基于 .editorconfig 和现有代码风格
+---
+Language: Cpp
+BasedOnStyle: Microsoft
+
+# 基础格式设置（对应 .editorconfig）
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+LineEnding: CRLF
+Encoding: UTF-8
+
+# 大括号风格 - Allman 风格（与现有代码一致）
+BreakBeforeBraces: Allman
+BraceWrapping:
+  AfterClass: true
+  AfterControlStatement: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: true
+  BeforeCatch: true
+  BeforeElse: true
+  IndentBraces: false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
+
+# 缩进设置
+IndentCaseLabels: false
+IndentGotoLabels: false
+IndentPPDirectives: None
+IndentExternBlock: NoIndent
+NamespaceIndentation: All
+AccessModifierOffset: 0
+
+# 列限制（与现有代码一致，大约120字符）
+ColumnLimit: 120
+
+# 指针和引用对齐 - 靠右（与现有代码一致：Control* pControl）
+PointerAlignment: Right
+ReferenceAlignment: Right
+
+# 构造函数初始化列表
+ConstructorInitializerIndentWidth: 4
+BreakConstructorInitializers: BeforeColon
+ConstructorInitializerAllOnOneLineOrOnePerLine: false
+PackConstructorInitializers: Never
+
+# 函数参数和调用
+AllowAllParametersOfDeclarationOnASingleLine: false
+AllowAllArgumentsOnASingleLine: false
+BinPackArguments: false
+BinPackParameters: false
+ExperimentalAutoDetectBinPacking: false
+
+# 模板
+AlwaysBreakTemplateDeclarations: Yes
+
+# 继承
+BreakInheritanceList: BeforeColon
+
+# 逗号分隔的列表
+AllowShortBlocksOnASingleLine: Never
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+
+# 空行设置
+MaxEmptyLinesToKeep: 2
+KeepEmptyLinesAtTheStartOfBlocks: false
+
+# 排序声明
+SortIncludes: CaseSensitive
+SortUsingDeclarations: Lexicographic
+
+# 空格设置
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpaceAfterTemplateKeyword: true
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCaseColon: false
+SpaceBeforeCpp11BracedList: false
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeParens: ControlStatements
+SpaceBeforeRangeBasedForLoopColon: true
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyBlock: false
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 1
+SpacesInAngles: Never
+SpacesInCStyleCastParentheses: false
+SpacesInConditionalStatement: false
+SpacesInContainerLiterals: false
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+# 注释设置
+ReflowComments: true
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 1
+
+# 宏定义处理
+AlignEscapedNewlines: Left
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+
+# 预处理指令
+IndentPragma: false
+
+# 短函数处理
+AllowShortFunctionsOnASingleLine: Inline
+
+# 类相关
+BreakBeforeInheritanceComma: false
+BreakBeforeTernaryOperators: true
+
+# 对齐设置
+AlignAfterOpenBracket: Align
+AlignArrayOfStructures: None
+AlignConsecutiveAssignments:
+  Enabled: false
+AlignConsecutiveBitFields:
+  Enabled: false
+AlignConsecutiveDeclarations:
+  Enabled: false
+AlignOperands: Align
+AlignConsecutiveShortCaseStatements:
+  Enabled: false
+
+# 其他
+BreakStringLiterals: true
+CompactNamespaces: false
+Cpp11BracedListStyle: true
+DerivePointerAlignment: false
+DisableFormat: false
+FixNamespaceComments: true
+IncludeBlocks: Preserve
+InsertBraces: false
+KeepEmptyLinesAtEOF: true
+LambdaBodyIndentation: Signature
+RemoveBracesLLVM: false
+RemoveParentheses: Leave
+RemoveSemicolon: false
+RequiresClausePosition: OwnLine
+RequiresExpressionIndentation: OuterScope
+SeparateDefinitionBlocks: Leave
+Standard: c++20

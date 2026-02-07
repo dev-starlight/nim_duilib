@@ -29,6 +29,8 @@ x86/
 bld/
 [Oo]bj/
 [Ll]og/
+build_tests/
+build_test*/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
@@ -353,3 +355,12 @@ healthchecksdb
 /bin/WebView2Loader.dll
 /duilib/third_party/libpag/windows/lib-vc-x64
 /duilib/third_party/libpag/windows/lib-vc-x86
+.claude/*
+
+# Local development artifacts
+/bin/testdb/
+/build/coverage/
+/build_tests/
+/build_tests_duilib/
+/build_test_eb/
+/build/temp_build.bat
