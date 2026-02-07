@@ -162,7 +162,12 @@ bool StringCharset::GetDataAsString(const char* data, uint32_t length, CharsetTy
         result.reserve(dataSize + 1);
         const uint16_t* dataBE = (const uint16_t*)realData;
         for (uint32_t i = 0; i < dataSize; i++) {
-            result.push_back((dataBE[i] >> 8) | (dataBE[i] << 8));
+            const uint16_t ch = static_cast<uint16_t>((dataBE[i] >> 8) | (dataBE[i] << 8));
+#if defined(WCHAR_T_IS_UTF16)
+            result.push_back(static_cast<wchar_t>(ch));
+#else
+            result.push_back(static_cast<wchar_t>(static_cast<char32_t>(ch)));
+#endif
         }
     }
     else {
