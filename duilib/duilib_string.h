@@ -12,6 +12,27 @@
 
 /** Unicode版本的字符串宏定义
 */
+
+
+// 非Windows平台补齐常用TCHAR比较函数
+#if !defined(DUILIB_BUILD_FOR_WIN)
+    #include <cwchar>
+    #include <strings.h>
+    #if !defined(_tcsicmp)
+        #if defined(DUILIB_UNICODE)
+            #define _tcsicmp wcscasecmp
+        #else
+            #define _tcsicmp strcasecmp
+        #endif
+    #endif
+    #if !defined(_tcsnicmp)
+        #if defined(DUILIB_UNICODE)
+            #define _tcsnicmp wcsncasecmp
+        #else
+            #define _tcsnicmp strncasecmp
+        #endif
+    #endif
+#endif
 #if !defined(_T)
     #if defined (DUILIB_UNICODE)
         #define _T(x)   L##x
