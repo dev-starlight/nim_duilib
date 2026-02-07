@@ -177,7 +177,7 @@ void AttributeUtil::ParseRectValue(const char* strValue, UiRect& rect, bool bChe
 }
 
 void AttributeUtil::ParseAttributeList(const DString& strList,
-                                       DString::value_type seperateChar,
+                                       DString::value_type separatorChar,
                                        std::vector<std::pair<DString, DString>>& attributeList)
 {
     //示例：normal_image="file='public/button/window-minimize.svg' width='24' height='24' valign='center' halign='center'" hot_color="AliceBlue" pushed_color="Lavender"
@@ -201,18 +201,18 @@ void AttributeUtil::ParseAttributeList(const DString& strList,
         }
         //跳到等号字符后面的字符，这个字符应该是个分隔字符
         pstrList++;
-        ASSERT(*pstrList == seperateChar);
-        if (*pstrList != seperateChar) {
+        ASSERT(*pstrList == separatorChar);
+        if (*pstrList != separatorChar) {
             return;
         }
 
         //跳到第一个分隔字符后面的字符，读取属性值
         pstrList++;
-        while (*pstrList != _T('\0') && *pstrList != seperateChar) {
+        while (*pstrList != _T('\0') && *pstrList != separatorChar) {
             sValue += *pstrList++;
         }
-        ASSERT(*pstrList == seperateChar);
-        if (*pstrList != seperateChar) {
+        ASSERT(*pstrList == separatorChar);
+        if (*pstrList != separatorChar) {
             return;
         }
 
