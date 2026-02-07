@@ -84,7 +84,7 @@ DUILIB_MAKE_THREADS="-j 6"
 # 编译类型：Debug还是Release
 DUILIB_BUILD_TYPE=Release
 
-# Skia库的子目录，固定使用LLVM编译的，如果想使用默认规则，可注释掉这部分代码
+# Skia库子目录优先使用LLVM构建产物，若不存在则回退到GCC构建产物
 # 获取CPU架构
 CPU_ARCH_STR=$(uname -m)
 
