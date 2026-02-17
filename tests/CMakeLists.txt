@@ -47,6 +47,7 @@ add_executable(duilib_tests
     Utils/test_StringConvert.cpp
     "${DUILIB_SRC_ROOT_DIR}/duilib/Core/CompiledResourceLoader.cpp"
     "${DUILIB_SRC_ROOT_DIR}/duilib/Utils/StringConvert.cpp"
+    "${DUILIB_SRC_ROOT_DIR}/duilib/Utils/StringUtil.cpp"
     "${DUILIB_SRC_ROOT_DIR}/duilib/third_party/convert_utf/ConvertUTF.cpp"
     "${DUILIB_SRC_ROOT_DIR}/duilib/ResourceCompiler/ResourceCompiler.cpp"
 )
@@ -97,6 +98,16 @@ target_include_directories(core_types_tests PRIVATE
     "${DUILIB_SRC_ROOT_DIR}"
 )
 register_gtest_target(core_types_tests)
+
+add_executable(control_factory_tests
+    Core/test_ControlFactory.cpp
+    "${DUILIB_SRC_ROOT_DIR}/duilib/Core/ControlFactory.cpp"
+)
+target_include_directories(control_factory_tests PRIVATE
+    "${CMAKE_CURRENT_SOURCE_DIR}/mocks"
+    "${DUILIB_SRC_ROOT_DIR}"
+)
+register_gtest_target(control_factory_tests)
 
 add_executable(stringutil_tests
     Utils/test_StringUtil.cpp
