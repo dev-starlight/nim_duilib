@@ -2,6 +2,9 @@
 #include "duilib/Core/UiColor.h"
 
 using ui::UiColor;
+#ifndef DUILIB_BUILD_FOR_WIN
+using ui::COLORREF;
+#endif
 
 // --- 构造函数 ---
 

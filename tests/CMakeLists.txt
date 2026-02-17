@@ -49,6 +49,7 @@ add_executable(duilib_tests
     "${DUILIB_SRC_ROOT_DIR}/duilib/Utils/StringConvert.cpp"
     "${DUILIB_SRC_ROOT_DIR}/duilib/third_party/convert_utf/ConvertUTF.cpp"
     "${DUILIB_SRC_ROOT_DIR}/duilib/ResourceCompiler/ResourceCompiler.cpp"
+    "${DUILIB_SRC_ROOT_DIR}/duilib/Utils/StringUtil.cpp"
 )
 
 target_include_directories(duilib_tests PRIVATE
@@ -203,3 +204,15 @@ if(DUILIB_BUILD_LUA_TESTS)
     
     register_gtest_target(lua_tests)
 endif()
+
+add_executable(colormanager_tests
+    Core/test_ColorManager.cpp
+    "${DUILIB_SRC_ROOT_DIR}/duilib/Core/ColorManager.cpp"
+    "${DUILIB_SRC_ROOT_DIR}/duilib/Core/UiColors.cpp"
+    "${DUILIB_SRC_ROOT_DIR}/duilib/Utils/StringUtil.cpp"
+)
+target_include_directories(colormanager_tests PRIVATE
+    "${CMAKE_CURRENT_LIST_DIR}/mocks"
+    "${DUILIB_SRC_ROOT_DIR}"
+)
+register_gtest_target(colormanager_tests)

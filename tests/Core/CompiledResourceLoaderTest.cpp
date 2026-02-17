@@ -107,6 +107,8 @@ TEST(CompiledResourceLoaderTest, ExistsAndGetResourceData)
     auto blob = BuildCompiledBlob(entries);
 
     CompiledResourceLoader loader;
+    // Set case-insensitive for cross-platform test consistency
+    loader.SetCaseSensitive(false);
     ASSERT_TRUE(loader.Initialize(blob.data(), blob.size()));
 
     EXPECT_TRUE(loader.Exists(_T(":/images/icon.png")));
@@ -287,9 +289,11 @@ TEST(CompiledResourceLoaderTest, SetCaseSensitiveNoOpWhenUnchanged)
     auto blob = BuildCompiledBlob({{"x/y.txt", {'o', 'k'}}});
 
     CompiledResourceLoader loader;
+    loader.SetCaseSensitive(false);
     ASSERT_TRUE(loader.Initialize(blob.data(), blob.size()));
     EXPECT_TRUE(loader.Exists(_T("X/Y.TXT")));
 
+    // Should be no-op if already false
     loader.SetCaseSensitive(false);
     EXPECT_FALSE(loader.IsCaseSensitive());
     EXPECT_TRUE(loader.Exists(_T("X/Y.TXT")));
