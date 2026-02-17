@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include "duilib/Core/UiColor.h"
 
-using ui::UiColor;
+using namespace ui;
 
 // --- 构造函数 ---
 

@@ -7,7 +7,7 @@ class MockControl : public ui::Control
 {
 public:
     MockControl(ui::Window* pWindow) : ui::Control(pWindow) {}
-    virtual ui::DString GetType() const override { return _T("MockControl"); }
+    virtual DString GetType() const override { return _T("MockControl"); }
 };
 
 TEST(ControlFactoryTest, RegisterAndCreate)

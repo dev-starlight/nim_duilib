@@ -1,6 +1,7 @@
 #include "duilib/Core/CompiledResourceLoader.h"
 #include "duilib/Core/GlobalManager.h"
 #include "duilib/Utils/StringConvert.h"
+#include "duilib/Utils/StringUtil.h"
 #include <cstring>
 #include <algorithm>
 
@@ -49,7 +50,7 @@ bool CompiledResourceLoader::Exists(const DString& path) const
         return m_resourceIndex.find(normalizedPath) != m_resourceIndex.end();
     } else {
         for (const auto& entry : m_resourceIndex) {
-            if (_tcsicmp(entry.first.c_str(), normalizedPath.c_str()) == 0) {
+            if (StringUtil::StringICompare(entry.first.c_str(), normalizedPath.c_str()) == 0) {
                 return true;
             }
         }
@@ -79,7 +80,7 @@ bool CompiledResourceLoader::GetResourceData(const DString& path,
 
     if (!m_caseSensitive) {
         for (const auto& entry : m_resourceIndex) {
-            if (_tcsicmp(entry.first.c_str(), normalizedPath.c_str()) == 0) {
+            if (StringUtil::StringICompare(entry.first.c_str(), normalizedPath.c_str()) == 0) {
                 data = entry.second.data;
                 size = entry.second.size;
                 return true;
