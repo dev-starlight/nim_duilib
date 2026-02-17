@@ -203,3 +203,15 @@ if(DUILIB_BUILD_LUA_TESTS)
     
     register_gtest_target(lua_tests)
 endif()
+
+add_executable(colormanager_tests
+    Core/test_ColorManager.cpp
+    "${DUILIB_SRC_ROOT_DIR}/duilib/Core/ColorManager.cpp"
+    "${DUILIB_SRC_ROOT_DIR}/duilib/Core/UiColors.cpp"
+    "${DUILIB_SRC_ROOT_DIR}/duilib/Utils/StringUtil.cpp"
+)
+target_include_directories(colormanager_tests PRIVATE
+    "${CMAKE_CURRENT_LIST_DIR}/mocks"
+    "${DUILIB_SRC_ROOT_DIR}"
+)
+register_gtest_target(colormanager_tests)
