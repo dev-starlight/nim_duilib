@@ -98,6 +98,15 @@ target_include_directories(core_types_tests PRIVATE
 )
 register_gtest_target(core_types_tests)
 
+add_executable(control_factory_tests
+    Core/test_ControlFactory.cpp
+)
+target_include_directories(control_factory_tests PRIVATE
+    "${DUILIB_SRC_ROOT_DIR}"
+)
+target_link_libraries(control_factory_tests PRIVATE duilib)
+register_gtest_target(control_factory_tests)
+
 add_executable(stringutil_tests
     Utils/test_StringUtil.cpp
     "${DUILIB_SRC_ROOT_DIR}/duilib/Utils/StringUtil.cpp"

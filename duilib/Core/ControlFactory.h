@@ -1,6 +1,7 @@
 #ifndef UI_CORE_CONTROL_FACTORY_H_
-#define UI_CORE_CORE_CONTROL_FACTORY_H_
+#define UI_CORE_CONTROL_FACTORY_H_
 
+#include "duilib/duilib_defs.h"
 #include <map>
 #include <functional>
 #include <memory>
@@ -15,7 +16,7 @@ class Window;
 
 using ControlCreator = std::function<Control* (Window*)>;
 
-class ControlFactory
+class UILIB_API ControlFactory
 {
 public:
     static ControlFactory& Instance();
