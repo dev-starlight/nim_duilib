@@ -49,6 +49,7 @@ add_executable(duilib_tests
     "${DUILIB_SRC_ROOT_DIR}/duilib/Utils/StringConvert.cpp"
     "${DUILIB_SRC_ROOT_DIR}/duilib/third_party/convert_utf/ConvertUTF.cpp"
     "${DUILIB_SRC_ROOT_DIR}/duilib/ResourceCompiler/ResourceCompiler.cpp"
+    "${DUILIB_SRC_ROOT_DIR}/duilib/Utils/StringUtil.cpp"
 )
 
 target_include_directories(duilib_tests PRIVATE
